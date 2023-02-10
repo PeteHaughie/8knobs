@@ -12,7 +12,7 @@
 #include <tables/cos8192_int8.h>
 #include <mozzi_midi.h>
 
-#define CONTROL_RATE 256
+#define CONTROL_RATE 640
 
 #define knob1 A0
 #define knob2 A1
@@ -60,7 +60,6 @@ void setup(){
   startMozzi(CONTROL_RATE);
 }
 
-
 // returns freq
 int ranToFreq(char oscil_num, int ran){
   static int previous_ran;
@@ -73,7 +72,6 @@ int ranToFreq(char oscil_num, int ran){
   previous_ran = ran;
   return freq;
 }
-
 
 void updateControl(){
   static float previous_pulse_freq;
@@ -127,39 +125,29 @@ void updateControl(){
     kVol5.setFreq((1023-mozziAnalogRead(knob8))/256);
     if(abs(v5)<THRESHOLD) aCos5.setFreq(ranToFreq(5,ran));
     break;
-//
   case 6:
     kVol6.setFreq((1023-mozziAnalogRead(knob1))/256);
     if(abs(v6)<THRESHOLD) aCos6.setFreq(ranToFreq(6,ran));
     break;
-
   case 7:
     kVol7.setFreq((1023-mozziAnalogRead(knob2))/256);
     if(abs(v7)<THRESHOLD) aCos7.setFreq(ranToFreq(7,ran));
     break;
-
   }
 
   if(++whoseTurn>=knob3) whoseTurn = 0;
 }
 
-
-
 int updateAudio(){
-  long asig = (long)
-    aCos0.next()*v0 +
-      aCos1.next()*v1 +
-      aCos2.next()*v2 +
-      aCos3.next()*v3 +
-      aCos4.next()*v4 +
-      aCos5.next()*v5 +
-      aCos6.next()*v6 +
-      aCos7.next()*v7;
-  asig >>= 9; // shift back to audio output range
-  return (int) asig;
+    int asig1 = (aCos1.next()*v1 + aCos2.next()*v2)>>1; // sum two and divide by 2
+    int asig2 = (aCos3.next()*v3 + aCos4.next()*v4)>>1;
+    int asig3 = (aCos5.next()*v5 + aCos6.next()*v6)>>1;
+    int asig4 = (aCos7.next()*v7 + aCos0.next()*v0)>>1;
+    int asig5 = (asig1 + asig2)>>1; // sum two and divide by 2
+    int asig6 = (asig3 + asig4)>>1;
+    int asigDRN = (asig5 + asig6)>>7; // divide by 128
+    return(asigDRN);
 }
-
-
 
 void loop(){
   audioHook();
